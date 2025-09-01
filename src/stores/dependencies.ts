@@ -1,35 +1,11 @@
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
+import type {Dependency, MvnDTO, MvnFullDependencyDto} from "@/types/maven-types.ts";
+import {mapGradleToDeps, mapMavenFullToDeps, mapMavenToDeps, mapPythonToDeps} from "@/service/mapper.ts";
+import {api} from "@/service/api.ts";
+
 
 export type Manager = 'maven' | 'gradle' | 'python';
-
-export type MvnDependencyDTO = {
-    groupId: string;
-    artifactId: string;
-    version: string;
-    scope?: string | null;
-};
-export type MvnParentDTO = {
-    groupId: string;
-    artifactId: string;
-    version: string;
-};
-export type MvnDTO = {
-    parent: MvnParentDTO | null;
-    dependencies: MvnDependencyDTO[];
-};
-
-export interface Dependency {
-    id: string;                 // уникальный ID (groupId:artifactId)
-    manager: Manager;           // тип проекта
-    groupId: string;            // напр. org.springframework.boot
-    artifactId: string;         // напр. spring-boot-starter-web
-    currentVersion: string;     // версия в файле пользователя
-    latestVersion: string;      // последняя доступная (по данным сервера/репо)
-    allVersions: string[];      // полный список версий
-    selectedVersion?: string;   // версия, выбранная пользователем
-    icon?: string;              // путь к иконке (опционально)
-}
 
 interface PersistedState {
     items: Dependency[];
@@ -52,14 +28,14 @@ export const useDependenciesStore = defineStore('dependencies', () => {
     const loading = ref(false);
     const lastUpdated = ref<Date | null>(null);
 
-    // Гидратация из localStorage (если есть)
+    // Гидратация
     const persisted = loadPersisted();
     if (persisted?.items?.length) {
         items.value = persisted.items;
         lastUpdated.value = persisted.lastUpdated ? new Date(persisted.lastUpdated) : null;
     }
 
-    // Персист в localStorage
+    // Персист
     watch(items, () => {
         const payload: PersistedState = {
             items: items.value,
@@ -67,6 +43,8 @@ export const useDependenciesStore = defineStore('dependencies', () => {
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     }, { deep: true });
+
+    // ===== Публичные действия =====
 
     function setDependencies(list: Dependency[]) {
         items.value = list.map(d => ({
@@ -90,38 +68,64 @@ export const useDependenciesStore = defineStore('dependencies', () => {
         lastUpdated.value = new Date();
     }
 
-    // Имитация обновления с сервера
-    async function refreshAll() {
+    async function loadMavenFull(file: File) {
+        console.groupCollapsed('dependencies.loadMavenFull:')
         loading.value = true;
-        await new Promise(r => setTimeout(r, 900)); // имитация сети
-        // Пример «наивного» апдейта latestVersion + добавление пары версий
-        items.value = items.value.map(d => {
-            const nextPatch = bumpPatch(d.latestVersion || d.currentVersion);
-            const extended = unique([nextPatch, d.latestVersion, ...d.allVersions].filter(Boolean));
-            return { ...d, latestVersion: nextPatch, allVersions: extended };
-        });
-        lastUpdated.value = new Date();
-        loading.value = false;
+        try {
+            const dto: MvnFullDependencyDto = await api.maven.uploadFull(file);
+            console.log('MvnFullDependencyDto: ', dto);
+
+            const deps = mapMavenFullToDeps(dto);
+            console.log('Dependency[]: ', deps);
+
+            setDependencies(deps);
+            console.groupEnd()
+        } finally {
+            loading.value = false;
+            console.groupEnd()
+        }
+    }
+
+    async function loadMavenPlain(file: File) {
+        loading.value = true;
+        try {
+            const dto: MvnDTO = await api.maven.uploadDeps(file);
+            const deps = mapMavenToDeps(dto);
+            setDependencies(deps);
+        } finally {
+            loading.value = false;
+        }
+    }
+
+    async function loadGradle(file: File) {
+        loading.value = true;
+        try {
+            const payload = await api.gradle.uploadDeps(file);
+            const deps = mapGradleToDeps(payload);
+            setDependencies(deps);
+        } finally {
+            loading.value = false;
+        }
+    }
+
+    async function loadPython(file: File) {
+        loading.value = true;
+        try {
+            const payload = await api.python.uploadDeps(file);
+            const deps = mapPythonToDeps(payload);
+            setDependencies(deps);
+        } finally {
+            loading.value = false;
+        }
     }
 
     function saveSelections() {
-        // Здесь можно сделать POST на бэкенд
         lastUpdated.value = new Date();
     }
 
     return {
         items, loading, lastUpdated,
-        setDependencies, updateSelection, refreshAll, saveSelections, applyLatestToAll
+        setDependencies, updateSelection, applyLatestToAll, saveSelections,
+        loadMavenFull, loadMavenPlain, loadGradle, loadPython,
     };
 });
-
-// helpers
-function bumpPatch(v: string): string {
-    const m = v.match(/^(\d+)\.(\d+)\.(\d+)/);
-    if (!m) return v;
-    const [ , a, b, c] = m;
-    return `${a}.${b}.${Number(c)+1}`;
-}
-function unique<T>(arr: T[]): T[] {
-    return Array.from(new Set(arr));
-}

@@ -80,18 +80,18 @@
 
 <script setup lang="ts">
 import {computed, onMounted} from 'vue';
-import {type Dependency, useDependenciesStore} from '@/stores/dependencies';
-import { useUiStore } from '@/stores/ui';
+import {useDependenciesStore} from '@/stores/dependencies';
+import {useUiStore} from '@/stores/ui';
 
-// Для демо иконок можно использовать твои ассеты
 import mavenIcon from '@/assets/images/maven_icon.png';
 import gradleIcon from '@/assets/images/gradle_icon.png';
 import pythonIcon from '@/assets/images/python_icon.png';
+import type {Dependency} from "@/types/maven-types.ts";
 
-const ui = useUiStore();
-const store = useDependenciesStore();
-const deps = computed(() => store.items);
-const loading = computed(() => store.loading);
+const uiStore = useUiStore();
+const depsStore = useDependenciesStore();
+const deps = computed(() => depsStore.items);
+const loading = computed(() => depsStore.loading);
 
 function initials(d: Dependency) {
   const a = (d.artifactId?.[0] ?? 'D').toUpperCase();
@@ -100,17 +100,16 @@ function initials(d: Dependency) {
 }
 
 function onSelect(depId: string, version: string) {
-  store.updateSelection(depId, version);
+  depsStore.updateSelection(depId, version);
 }
 
 async function onRefresh() {
-  await store.refreshAll();
-  store.applyLatestToAll();
+  await depsStore.refreshAll();
+  depsStore.applyLatestToAll();
 }
 
 function onSave() {
-  store.saveSelections();
-  // здесь можно роутить дальше или показать тост
+  depsStore.saveSelections();
 }
 
 function attachIcons(list: Dependency[]): Dependency[] {
@@ -162,9 +161,9 @@ function statusClass(d: any, which: 'current' | 'latest') {
 
 // На входе страницы — если стор пуст, подложим демо-данные
 onMounted(() => {
-  ui.setActiveNav('analyze');
-  if (!store.items.length) {
-    store.setDependencies(attachIcons([
+  uiStore.setActiveNav('analyze');
+  if (!depsStore.items.length) {
+    depsStore.setDependencies(attachIcons([
       {
         id: 'org.springframework.boot:spring-boot-starter-web',
         manager: 'maven',
