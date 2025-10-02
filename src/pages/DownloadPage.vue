@@ -116,7 +116,6 @@ async function processFile(file: File) {
 
   try {
     if (kind === 'maven') {
-      // Твой основной сценарий — полный разбор
       await depsStore.loadMavenFull(file);
     } else if (kind === 'gradle') {
     } else if (kind === 'python') {

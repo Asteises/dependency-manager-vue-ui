@@ -1,4 +1,4 @@
-import type {Dependency, MvnDependencyDTO, MvnDTO, MvnFullDependencyDto} from "@/types/maven-types.ts";
+import type {Dependency, MvnDependencyDTO, MvnFullDependencyDto} from "@/types/maven-types.ts";
 
 
 function mvnIcon()    { return '/src/assets/images/maven_icon.png'; }
@@ -31,7 +31,7 @@ export function mapMavenFullToDeps(dto: MvnFullDependencyDto): Dependency[] {
             artifactId: item.artifactId,
             scope: item.scope ?? '',
             currentVersion: item.version,
-            latestVersion: all[0] ?? item.version,
+            latestVersion: all[all.length - 1] ?? item.version,
             allVersions: all,
             selectedVersion: item.version,
             icon: mvnIcon(),
@@ -40,20 +40,6 @@ export function mapMavenFullToDeps(dto: MvnFullDependencyDto): Dependency[] {
 
     console.groupEnd();
     return result;
-}
-
-export function mapMavenToDeps(dto: MvnDTO): Dependency[] {
-    return (dto.dependencies ?? []).map(d => ({
-        id: idOf(d.groupId, d.artifactId),
-        manager: 'maven',
-        groupId: d.groupId,
-        artifactId: d.artifactId,
-        currentVersion: d.version,
-        latestVersion: d.version,
-        allVersions: [d.version],
-        selectedVersion: d.version,
-        icon: mvnIcon(),
-    }));
 }
 
 export function mapGradleToDeps(payload: { dependencies: MvnDependencyDTO[] }): Dependency[] {
