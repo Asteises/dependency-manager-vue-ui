@@ -65,7 +65,7 @@
 import {ref} from 'vue';
 import {useRouter} from 'vue-router';
 import UploadProgressModal from "@/components/UploadProgressModal.vue";
-import {useDependenciesStore} from "@/stores/dependencies.ts";
+import {useDependenciesStore} from "@/stores/dependencies.store.ts";
 
 // UI state
 const isDragging = ref(false);
@@ -84,12 +84,10 @@ type FileKind = 'maven' | 'gradle' | 'python' | 'unknown';
 function detectFileKind(file: File): FileKind {
   const name = file.name.toLowerCase().trim();
 
-  // точечные кейсы прежде общих
   if (name === 'pom.xml') return 'maven';
   if (name.endsWith('.gradle') || name.endsWith('.gradle.kts')) return 'gradle';
   if (name === 'requirements.txt') return 'python';
 
-  // fallback’и (если пользователь переименовал файл странно)
   if (name.endsWith('.xml')) return 'maven';
   if (name.endsWith('.txt')) return 'python';
 
@@ -126,7 +124,7 @@ async function processFile(file: File) {
     console.error(e);
     alert(`Ошибка загрузки: ${e.message ?? e}`);
   } finally {
-    // модалку можно закрыть автоматически
+
   }
 }
 
@@ -158,7 +156,7 @@ function handleDrop(event: DragEvent) {
 
 /* Общие стили (согласованные с AppHeader и AppNav) */
 .upload-container {
-  font-family: 'Roboto', sans-serif; /* Используем тот же шрифт, что и в AppHeader */
+  font-family: 'Roboto', sans-serif;
   max-width: 900px;
   margin: 0 auto;
   padding: 10px;
@@ -196,9 +194,9 @@ function handleDrop(event: DragEvent) {
   text-align: center;
   border: 1px solid #e0e0e0;
 
-  display: block; /* чтобы карточка вела себя как блок */
-  text-decoration: none; /* <— убрать подчёркивание */
-  color: inherit; /* <— цвет текста как у контейнера */
+  display: block;
+  text-decoration: none;
+  color: inherit;
 }
 
 .project-card:hover {

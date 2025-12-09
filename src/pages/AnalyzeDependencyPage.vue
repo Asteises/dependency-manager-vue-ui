@@ -24,9 +24,10 @@
 
 <script setup lang="ts">
 import {computed, onMounted} from 'vue';
-import {useDependenciesStore} from '@/stores/dependencies';
-import {useUiStore} from "@/stores/ui";
+import {useDependenciesStore} from '@/stores/dependencies.store.ts';
+import {useUiStore} from "@/stores/ui.store.ts";
 import DependencyCard from "@/components/dependencies/DependencyCard.vue";
+import router from "@/router/router.ts";
 
 const depsStore = useDependenciesStore();
 const deps = computed(() => depsStore.items);
@@ -43,6 +44,7 @@ async function onRefresh() {
 
 function onSave() {
   depsStore.saveSelections();
+  router.push('/export');
 }
 
 onMounted(() => {

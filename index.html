@@ -10,9 +10,7 @@
     <meta name="theme-color" content="#ffffff" />
     <title>Dependency Manager</title>
 
-    <!-- Опционально: системные шрифты для быстрой первой отрисовки -->
     <style>
-        /* Небольшой «reset» и базовые токены темы */
         :root {
             --bg: #f6f9fc;
             --fg: #1f2937;
@@ -46,14 +44,12 @@
             text-rendering: optimizeLegibility;
         }
 
-        /* Поддержка «сейф-зоны» на iOS (отрез экрана) */
         #app {
             padding-left: env(safe-area-inset-left);
             padding-right: env(safe-area-inset-right);
             padding-bottom: env(safe-area-inset-bottom);
         }
 
-        /* На случай FOUC до загрузки стилей приложения */
         .no-js {
             display: none;
         }
@@ -61,12 +57,10 @@
 </head>
 <body>
 <div id="app">
-    <!-- Простой прелоадер до инициализации Vue -->
     <noscript>Требуется JavaScript для запуска приложения.</noscript>
     <div class="no-js">Загрузка…</div>
 </div>
 
-<!-- Vite подключает модульную точку входа -->
 <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

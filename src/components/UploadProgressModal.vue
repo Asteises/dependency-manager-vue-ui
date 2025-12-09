@@ -80,7 +80,7 @@
 
 <script setup lang="ts">
 import {computed, onMounted, onUnmounted, ref, watch} from 'vue';
-import router from "@/router";
+import router from "@/router/router.ts";
 
 const props = withDefaults(defineProps<{
   modelValue: boolean;

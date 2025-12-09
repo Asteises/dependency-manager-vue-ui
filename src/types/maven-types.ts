@@ -1,4 +1,4 @@
-import type {Manager} from "@/stores/dependencies.ts";
+import type {Manager} from "@/stores/dependencies.store.ts";
 
 
 export type MvnFullDependencyDto = {
@@ -43,4 +43,13 @@ export interface Dependency {
     allVersions: string[];      // полный список версий
     selectedVersion?: string;   // версия, выбранная пользователем
     icon?: string;              // путь к иконке (опционально)
+}
+
+export interface MavenGroupArtifact {
+    groupId: string;
+    artifactId: string;
+}
+
+export interface MavenGroupArtifactVersions extends MavenGroupArtifact {
+    versions: string[];
 }

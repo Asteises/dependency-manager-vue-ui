@@ -1,43 +1,70 @@
-import type {Dependency, MvnDependencyDTO, MvnFullDependencyDto} from "@/types/maven-types.ts";
+import type {
+    Dependency,
+    MavenGroupArtifactVersions,
+    MvnDependencyDTO,
+    MvnFullDependencyDto
+} from "@/types/maven-types.ts";
 
 
-function mvnIcon()    { return '/src/assets/images/maven_icon.png'; }
-function gradleIcon() { return '/src/assets/images/gradle_icon.png'; }
-function pythonIcon() { return '/src/assets/images/python_icon.png'; }
+function mvnIcon() {
+    return '/src/assets/images/maven_icon.png';
+}
+
+function gradleIcon() {
+    return '/src/assets/images/gradle_icon.png';
+}
+
+function pythonIcon() {
+    return '/src/assets/images/python_icon.png';
+}
 
 function idOf(groupId: string, artifactId: string) {
     return `${groupId}:${artifactId}`;
 }
 
-const uniq = <T,>(xs: T[]) => Array.from(new Set(xs));
-
-export function mapMavenFullToDeps(dto: MvnFullDependencyDto): Dependency[] {
+export function mapMavenFullToDeps(dto: MvnFullDependencyDto, versionsBatch: MavenGroupArtifactVersions[]): Dependency[] {
     console.groupCollapsed('mapper.mapMavenFullToDeps:');
+    console.log('Start mapping dependencies');
 
-    console.log('MvnFullDependencyDto: ', dto);
-    const result: Dependency[] = [];
-
-    for (const item of dto.dependencies ?? []) {
-
-        console.log('Try get dep: ', item);
-
-        const all = item.versions?.length ? uniq(item.versions) : [item.version];
-        console.log('versions: ', item.versions.length);
-
-        result.push({
-            id: idOf(item.groupId, item.artifactId),
-            manager: 'maven',
-            groupId: item.groupId,
-            artifactId: item.artifactId,
-            scope: item.scope ?? '',
-            currentVersion: item.version,
-            latestVersion: all[all.length - 1] ?? item.version,
-            allVersions: all,
-            selectedVersion: item.version,
-            icon: mvnIcon(),
-        });
+    // 4. Строим мапу: "groupId:artifactId" → versions[]
+    const versionsMap = new Map<string, string[]>();
+    for (const item of versionsBatch) {
+        const key = `${item.groupId}:${item.artifactId}`;
+        versionsMap.set(key, item.versions || []);
     }
 
+    // 5. Обогащаем зависимости из dto новыми versions
+    const enrichedDependencies = dto.dependencies.map(dep => {
+        const key = `${dep.groupId}:${dep.artifactId}`;
+        const newVersions = versionsMap.get(key) || [dep.version];
+        return {
+            ...dep,
+            versions: newVersions
+        };
+    });
+
+    const result: Dependency[] = enrichedDependencies.map(dep => {
+        const allVersions = Array.isArray(dep.versions) ? dep.versions : [dep.version];
+        const uniqueVersions = [...new Set(allVersions)]; // убираем дубли
+
+        // latestVersion — первая в списке
+        const latestVersion = uniqueVersions[0] || dep.version;
+
+        return {
+            id: `${dep.groupId}:${dep.artifactId}`,
+            manager: 'maven',
+            groupId: dep.groupId,
+            artifactId: dep.artifactId,
+            scope: dep.scope ?? '',
+            currentVersion: dep.version,        // из pom.xml
+            latestVersion,                      // из репозитория
+            allVersions: uniqueVersions,        // полный список (default 20)
+            selectedVersion: dep.version,       // по умолчанию — текущая
+            icon: mvnIcon(),
+        };
+    });
+
+    console.log('Результат:', result);
     console.groupEnd();
     return result;
 }

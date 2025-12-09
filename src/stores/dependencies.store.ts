@@ -1,6 +1,6 @@
-import { defineStore } from 'pinia';
-import { ref, watch } from 'vue';
-import type {Dependency, MvnFullDependencyDto} from "@/types/maven-types.ts";
+import {defineStore} from 'pinia';
+import {computed, ref, watch} from 'vue';
+import type {Dependency, MavenGroupArtifact} from "@/types/maven-types.ts";
 import {mapGradleToDeps, mapMavenFullToDeps, mapPythonToDeps} from "@/service/mapper.ts";
 import {api} from "@/service/api.ts";
 
@@ -28,6 +28,18 @@ export const useDependenciesStore = defineStore('dependencies', () => {
     const loading = ref(false);
     const lastUpdated = ref<Date | null>(null);
 
+    const changedDependencies = computed(() => {
+        return items.value.filter(dep =>
+            dep.selectedVersion !== dep.currentVersion
+        );
+    });
+
+    const unchangedDependencies = computed(() => {
+        return items.value.filter(dep =>
+            dep.selectedVersion === dep.currentVersion
+        );
+    });
+
     // Гидратация
     const persisted = loadPersisted();
     if (persisted?.items?.length) {
@@ -42,7 +54,7 @@ export const useDependenciesStore = defineStore('dependencies', () => {
             lastUpdated: lastUpdated.value?.toISOString() ?? null,
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    }, { deep: true });
+    }, {deep: true});
 
     // ===== Публичные действия =====
 
@@ -68,21 +80,51 @@ export const useDependenciesStore = defineStore('dependencies', () => {
         lastUpdated.value = new Date();
     }
 
-    async function loadMavenFull(file: File) {
-        console.groupCollapsed('dependencies.loadMavenFull:')
+    async function loadMavenFull(file: File, signal?: AbortSignal) {
+        console.groupCollapsed('dependencies.store.loadMavenFull');
         loading.value = true;
         try {
-            const dto: MvnFullDependencyDto = await api.maven.uploadFull(file);
-            console.log('MvnFullDependencyDto: ', dto);
+            // 1. Проверяем пользователя TODO: нужно будет переделать
+            const user = localStorage.getItem('dm_user') || 'guest';
+            console.log("Получен запрос на обработку файла .pom для пользователя:", user)
 
-            const deps = mapMavenFullToDeps(dto);
-            console.log('Dependency[]: ', deps);
+            // 2. Отправляем файл на бэкенд, обрабатываем и возвращаем готовый вариант для отрисовки
+            const dto = await api.maven.uploadAndFetchModel(file, user);
+            console.log("Обработали файл:", dto)
 
-            setDependencies(deps);
-            console.groupEnd()
+            // 3. Проверяем наличие зависимостей и собираем последние версии
+            if (!dto?.dependencies.length) {
+                console.log('Нет базовых зависимостей');
+                console.groupEnd();
+                return [];
+            } else {
+                const gaList: MavenGroupArtifact[] = dto.dependencies.map(dep => ({
+                    groupId: dep.groupId,
+                    artifactId: dep.artifactId
+                }));
+
+                console.log('Запрашиваем версии для', gaList.length, 'зависимостей');
+                const versionsBatch = await api.maven.fetchVersionsBatch(gaList, signal);
+                console.log('Получены версии:', versionsBatch);
+
+                const deps = mapMavenFullToDeps(dto, versionsBatch);
+                setDependencies(deps);
+            }
         } finally {
             loading.value = false;
-            console.groupEnd()
+        }
+    }
+
+    async function exportPomFile(user: string, signal?: AbortSignal) {
+        console.groupCollapsed('dependencies.store.exportPomFile');
+        try {
+            const pom = await api.maven.exportFile('guest', signal);
+
+            console.log('Получен pom.xml (первые 200 символов):', pom.substring(0, 200));
+            console.log("Получили файл pom для пользователя:", user);
+            return pom;
+        } catch (error) {
+            console.log("Ошибка при экспорте файла pom:", error);
         }
     }
 
@@ -115,6 +157,7 @@ export const useDependenciesStore = defineStore('dependencies', () => {
     return {
         items, loading, lastUpdated,
         setDependencies, updateSelection, applyLatestToAll, saveSelections,
-        loadMavenFull, loadGradle, loadPython,
+        loadMavenFull, loadGradle, loadPython, changedDependencies, unchangedDependencies,
+        exportPomFile,
     };
 });
