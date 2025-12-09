@@ -1,7 +1,7 @@
 import {defineStore} from 'pinia';
 import {computed, ref, watch} from 'vue';
 import type {Dependency, MavenGroupArtifact} from "@/types/maven-types.ts";
-import {mapGradleToDeps, mapMavenFullToDeps, mapPythonToDeps} from "@/service/mapper.ts";
+import {mapMavenFullToDeps} from "@/service/mapper.ts";
 import {api} from "@/service/api.ts";
 
 
@@ -128,28 +128,6 @@ export const useDependenciesStore = defineStore('dependencies', () => {
         }
     }
 
-    async function loadGradle(file: File) {
-        loading.value = true;
-        try {
-            const payload = await api.gradle.uploadDeps(file);
-            const deps = mapGradleToDeps(payload);
-            setDependencies(deps);
-        } finally {
-            loading.value = false;
-        }
-    }
-
-    async function loadPython(file: File) {
-        loading.value = true;
-        try {
-            const payload = await api.python.uploadDeps(file);
-            const deps = mapPythonToDeps(payload);
-            setDependencies(deps);
-        } finally {
-            loading.value = false;
-        }
-    }
-
     function saveSelections() {
         lastUpdated.value = new Date();
     }
@@ -157,7 +135,7 @@ export const useDependenciesStore = defineStore('dependencies', () => {
     return {
         items, loading, lastUpdated,
         setDependencies, updateSelection, applyLatestToAll, saveSelections,
-        loadMavenFull, loadGradle, loadPython, changedDependencies, unchangedDependencies,
+        loadMavenFull, changedDependencies, unchangedDependencies,
         exportPomFile,
     };
 });

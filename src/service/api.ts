@@ -1,4 +1,4 @@
-import type {MavenGroupArtifactVersions, MvnDependencyDTO, MvnDTO, MvnFullDependencyDto} from "@/types/maven-types.ts";
+import type {MavenGroupArtifactVersions, MvnFullDependencyDto} from "@/types/maven-types.ts";
 
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
@@ -72,7 +72,7 @@ export const api = {
         ): Promise<MavenGroupArtifactVersions[]> {
             const res = await fetch(endpoints.maven.deps, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(dependencies),
                 signal
             });
@@ -82,22 +82,12 @@ export const api = {
         async exportFile(user: string, signal?: AbortSignal) {
             const res = await fetch(`${endpoints.maven.download}?user=${user}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json'},
+                headers: {'Content-Type': 'application/json'},
                 signal
             });
             return res.text();
         }
     },
-    gradle: {
-        uploadDeps(file: File, signal?: AbortSignal) {
-            return postFileJson<{ dependencies: MvnDependencyDTO[] }>(endpoints.gradle.deps, file, signal);
-        },
-    },
-    python: {
-        uploadDeps(file: File, signal?: AbortSignal) {
-            return postFileJson<{
-                dependencies: Array<{ name: string; version: string }>
-            }>(endpoints.python.deps, file, signal);
-        },
-    },
+    gradle: {},
+    python: {},
 };
