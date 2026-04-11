@@ -8,7 +8,6 @@ export const endpoints = {
         upload: `${API_BASE}/maven/pom/upload`,
         full: `${API_BASE}/maven/pom/current-model`,
         deps: `${API_BASE}/maven/dependencies/versions/batch`,
-        parent: `${API_BASE}/maven/dependencies/parent-dependency`,
         download: `${API_BASE}/maven/pom/beautifier-pom`,
     },
     gradle: {

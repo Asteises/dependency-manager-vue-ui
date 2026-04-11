@@ -42,7 +42,7 @@ export interface Dependency {
     latestVersion: string;      // последняя доступная (по данным сервера/репо)
     allVersions: string[];      // полный список версий
     selectedVersion?: string;   // версия, выбранная пользователем
-    icon?: string;              // путь к иконке (опционально)
+    // icon?: string;              // путь к иконке (опционально)
 }
 
 export interface MavenGroupArtifact {

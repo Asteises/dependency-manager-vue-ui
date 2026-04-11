@@ -56,7 +56,7 @@ const routes: RouteRecordRaw[] = [
                 meta: { title: 'Анализируйте и управляйте зависимостями' },
             },
             {
-                path: '/export',
+                path: 'export',
                 name: 'Export',
                 component: () => import('@/pages/ExportPage.vue'),
                 meta: { title: 'Экспорт обновлённого pom.xml' },
@@ -93,9 +93,6 @@ router.beforeEach((to) => {
     if (to.matched.some(r => r.meta?.guestOnly) && authed) {
         return { name: 'home' }
     }
-
-    // заголовок страницы
-    if (to.meta?.title) document.title = String(to.meta.title)
 })
 
 
